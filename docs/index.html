@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pulsehub</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Pulsehub</h1>
+        <p>Go WebSocket rooms · presence · history</p>
+      </div>
+      <span id="status" class="pill">offline</span>
+    </header>
+    <section class="join">
+      <input id="name" placeholder="callsign" value="pilot" />
+      <input id="room" placeholder="room" value="lobby" />
+      <button id="connect">Connect</button>
+    </section>
+    <main>
+      <div id="log" class="log"></div>
+      <form id="form">
+        <input id="msg" placeholder="message…" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </main>
+    <aside id="stats"></aside>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
