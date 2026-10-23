@@ -5,22 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pulsehub</title>
   <link rel="stylesheet" href="./style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@450;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="shell">
     <header>
       <div>
         <h1>Pulsehub</h1>
-        <p>Go WebSocket rooms · presence · history</p>
+        <p>Rooms · presence · typing · history · locked rooms</p>
       </div>
       <span id="status" class="pill">offline</span>
     </header>
     <section class="join">
       <input id="name" placeholder="callsign" value="pilot" />
       <input id="room" placeholder="room" value="lobby" />
+      <input id="token" placeholder="room token (optional)" />
       <button id="connect">Connect</button>
+      <button id="switch" type="button">Switch room</button>
     </section>
+    <p id="typing" class="typing"></p>
     <main>
       <div id="log" class="log"></div>
       <form id="form">
@@ -28,7 +31,6 @@
         <button type="submit">Send</button>
       </form>
     </main>
-    <aside id="stats"></aside>
   </div>
   <script src="./app.js"></script>
 </body>

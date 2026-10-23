@@ -24,6 +24,16 @@ func main() {
 	logger := log.New(os.Stdout, "pulsehub ", log.LstdFlags|log.Lmsgprefix)
 	h := hub.New(logger)
 
+	// Optional locked rooms: PULSE_ROOM_TOKENS=private:secret,ops:ops-token
+	if raw := os.Getenv("PULSE_ROOM_TOKENS"); raw != "" {
+		for _, part := range strings.Split(raw, ",") {
+			kv := strings.SplitN(strings.TrimSpace(part), ":", 2)
+			if len(kv) == 2 {
+				h.SetRoomToken(kv[0], kv[1])
+			}
+		}
+	}
+
 	webRoot, err := fs.Sub(webFS, "web")
 	if err != nil {
 		logger.Fatal(err)
@@ -39,6 +49,18 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(h.Stats())
 	})
+	mux.HandleFunc("/v1/rooms", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"rooms": h.Rooms()})
+	})
+	mux.HandleFunc("/v1/presence", func(w http.ResponseWriter, r *http.Request) {
+		room := r.URL.Query().Get("room")
+		if room == "" {
+			room = "lobby"
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"room": room, "members": h.Presence(room)})
+	})
 	mux.HandleFunc("/ws", h.ServeWS)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" || strings.HasSuffix(r.URL.Path, ".html") ||
@@ -51,7 +73,7 @@ func main() {
 
 	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	go func() {
-		logger.Printf("listening on %s · websocket hub", addr)
+		logger.Printf("listening on %s · websocket hub · rooms+presence", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal(err)
 		}
