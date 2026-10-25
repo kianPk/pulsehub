@@ -16,13 +16,15 @@ import (
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 
 type Message struct {
-	ID      string `json:"id,omitempty"`
-	Type    string `json:"type"`
-	Room    string `json:"room"`
-	From    string `json:"from"`
-	Text    string `json:"text,omitempty"`
-	At      int64  `json:"at"`
-	Members int    `json:"members,omitempty"`
+	ID        string `json:"id,omitempty"`
+	Type      string `json:"type"`
+	Room      string `json:"room"`
+	From      string `json:"from"`
+	Text      string `json:"text,omitempty"`
+	MessageID string `json:"messageId,omitempty"`
+	Emoji     string `json:"emoji,omitempty"`
+	At        int64  `json:"at"`
+	Members   int    `json:"members,omitempty"`
 }
 
 type Client struct {
@@ -279,7 +281,7 @@ func (h *Hub) broadcast(room string, msg Message, skip *Client) {
 		msg.ID = shortID()
 	}
 	b, _ := json.Marshal(msg)
-	if msg.Type == "chat" {
+	if msg.Type == "chat" || msg.Type == "react" {
 		h.mu.Lock()
 		h.history[room] = append(h.history[room], msg)
 		if len(h.history[room]) > h.histLimit {
@@ -316,10 +318,12 @@ func (c *Client) readPump() {
 			return
 		}
 		var in struct {
-			Type  string `json:"type"`
-			Text  string `json:"text"`
-			Room  string `json:"room"`
-			Token string `json:"token"`
+			Type      string `json:"type"`
+			Text      string `json:"text"`
+			Room      string `json:"room"`
+			Token     string `json:"token"`
+			MessageID string `json:"messageId"`
+			Emoji     string `json:"emoji"`
 		}
 		if err := json.Unmarshal(data, &in); err != nil {
 			continue
@@ -350,6 +354,23 @@ func (c *Client) readPump() {
 				From: c.name,
 				At:   time.Now().UnixMilli(),
 			}, c)
+		case "react":
+			emoji := strings.TrimSpace(in.Emoji)
+			msgID := strings.TrimSpace(in.MessageID)
+			if emoji == "" || msgID == "" {
+				continue
+			}
+			if len(emoji) > 16 {
+				emoji = emoji[:16]
+			}
+			c.hub.broadcast(c.room, Message{
+				Type:      "react",
+				Room:      c.room,
+				From:      c.name,
+				MessageID: msgID,
+				Emoji:     emoji,
+				At:        time.Now().UnixMilli(),
+			}, nil)
 		case "join":
 			c.hub.switchRoom(c, in.Room, in.Token)
 		case "ping":

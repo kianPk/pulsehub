@@ -2,6 +2,7 @@ const $ = (id) => document.getElementById(id)
 const logEl = $('log')
 let ws = null
 let typingTimer = null
+const messageIds = new Map()
 
 function line(html, cls = '') {
   const d = document.createElement('div')
@@ -40,7 +41,26 @@ function connect() {
       return
     }
     if (msg.type === 'chat') {
-      line(`<span class="from">${esc(msg.from)}</span> <span class="meta">#${esc(msg.room)}</span> ${esc(msg.text)}`, 'chat')
+      const id = msg.id || ''
+      if (id) messageIds.set(id, msg)
+      const reactBtn = id
+        ? ` <button type="button" class="react-btn" data-id="${esc(id)}" title="React">👍</button>`
+        : ''
+      line(
+        `<span class="from">${esc(msg.from)}</span> <span class="meta">#${esc(msg.room)}</span> ${esc(msg.text)}${reactBtn}`,
+        'chat',
+      )
+      logEl.querySelectorAll('.react-btn').forEach((btn) => {
+        btn.onclick = () => {
+          if (!ws || ws.readyState !== 1) return
+          ws.send(JSON.stringify({ type: 'react', messageId: btn.dataset.id, emoji: '👍' }))
+        }
+      })
+    } else if (msg.type === 'react') {
+      line(
+        `<span class="meta">${esc(msg.from)} reacted ${esc(msg.emoji)} to ${esc(msg.messageId)}</span>`,
+        'sys',
+      )
     } else if (msg.type === 'presence') {
       line(`<span class="meta">${esc(msg.from)} ${esc(msg.text)} · ${msg.members} in #${esc(msg.room)}</span>`, 'sys')
     } else if (msg.type === 'roster') {
